@@ -9,7 +9,7 @@
 
 GPIO_InitTypeDef GPIO_InitStruct;
 UART_HandleTypeDef huart1, huart2;
-I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c1, hi2c3;
 TIM_HandleTypeDef timer2;
 
 float azs = 1.0f;
@@ -29,6 +29,7 @@ void ak9916_magn_read_reg(uint8_t onset_reg, uint8_t len);
 void MX_USART1_UART_Init(void);
 void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_I2C3_Init(void);
 static void MX_TIM2_Init(void);
 
 volatile uint8_t rec[10];
@@ -99,6 +100,7 @@ int main(void)
 	__GPIOA_CLK_ENABLE();
 	__GPIOB_CLK_ENABLE();
 	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
 	__USART1_CLK_ENABLE();
 	__USART2_CLK_ENABLE();
 
@@ -106,10 +108,11 @@ int main(void)
 	MX_USART1_UART_Init();
 
 	MX_I2C1_Init();
+	MX_I2C3_Init();
 	//MX_TIM2_Init();
 //	lcdInit ();
 
-	lcdClear();
+//	lcdClear();
 
 	//initHMC5883L();
 	//waitTillMagnetometerIsInitialized();
@@ -117,7 +120,7 @@ int main(void)
 	float degree = 0.0;
 	char accReadString[64] = "";
 	char gyroReadString[64] = "";
-	char magnReadString[64] = "";
+	char magnReadString[32] = "";
 //	sprintf(magnitudeReadString, "Who am I before read \r\n");
 //	if(HAL_UART_Transmit(&huart2, magnitudeReadString, strlen(magnitudeReadString), 120) != HAL_OK)
 //	{
@@ -222,10 +225,10 @@ int main(void)
     	HAL_Delay(5000);
     }
     accelScale = G * 2.0f/accelRawScaling; // setting the accel scale to 2G
-
-    setUserBank(ub_0);
-
+    HAL_Delay(300);
     initMagnetometr();
+    initHMC5883L();
+    //waitTillMagnetometerIsInitialized();
 
     //read data (8 registers for magn data starting from reg 0x11 (HXL))
     HAL_Delay(200);
@@ -235,24 +238,24 @@ int main(void)
 
     while (1)
     {
-
+    	HAL_Delay(100);
     	AccelData accelData = readAccData();
     	GyroData gyroData = readGyroData();
     	MagnData magnData = readMagnData();
 
-    	if(1 == checkAvalibilityOfDataInRegister())
+    	//if(1 == checkAvalibilityOfDataInRegister())
     	{
     	}
 
 
-//    	const int16_t xAccDecimal = (int16_t)(accelData.xAcc * 10000);
-//    	const int16_t yAccDecimal = (int16_t)(accelData.yAcc * 10000);
-//    	const int16_t zAccDecimal = (int16_t)(accelData.zAcc * 10000);
-//    	float  _az = (((float)accelData.zAcc * accelScale))*azs;
+    	const int16_t xAccDecimal = (int16_t)(accelData.xAcc * 10000);
+    	const int16_t yAccDecimal = (int16_t)(accelData.yAcc * 10000);
+    	const int16_t zAccDecimal = (int16_t)(accelData.zAcc * 10000);
+    	float  _az = (((float)accelData.zAcc * accelScale))*azs;
 //    	sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> xAcc:%d.%d yAcc:%d.%d, zAcc:%d.%d\r\n",
 //    			accelData.devAddr, (int16_t)accelData.xAcc, xAccDecimal,  (int16_t)accelData.yAcc, yAccDecimal, (int16_t)accelData.zAcc, zAccDecimal);
-//    	sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> zAcc:%d.%d rawZ:%d\r\n",
-//    			accelData.devAddr, (int16_t)_az, zAccDecimal, accelData.zAcc);
+    	sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> zAcc:%d.%d rawZ:%d\r\n",
+    			accelData.devAddr, (int16_t)_az, zAccDecimal, accelData.zAcc);
 
     	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 //    	const uint16_t xGyroDecimal = (uint16_t)(gyroData.xGyro * 10000);
@@ -271,11 +274,12 @@ int main(void)
     	//sprintf(gyroReadString, "GYROSCOPE: xGyro:%d.%d\r\n", (int16_t)_gx, xGyroDecimal);
 
 //    	sprintf(magnReadString, "MAGNETOMETR x:%d y:%d z:%d \r\n", magnData.xMagn, magnData.yMagn, magnData.zMagn);
-
-//    	if(HAL_UART_Transmit(&huart2, accReadString, strlen(accReadString), 20) != HAL_OK)
-//    	{
-//    		HAL_Delay(5000);
-//    	}
+    	HAL_Delay(100);
+    	if(HAL_UART_Transmit(&huart2, accReadString, strlen(accReadString), 20) != HAL_OK)
+    	{
+    		HAL_Delay(5000);
+    	}
+    	HAL_Delay(100);
     	if(HAL_UART_Transmit(&huart2, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
     	{
     		HAL_Delay(5000);
@@ -284,9 +288,13 @@ int main(void)
 //    	{
 //    		HAL_Delay(5000);
 //    	}
-
+    	HAL_Delay(100);
 		degree = calculateAzimutWithDegree();
-
+		sprintf(magnReadString, "MAGNETOMETR x:%d \r\n", (int16_t)degree);
+		    	if(HAL_UART_Transmit(&huart2, magnReadString, strlen(magnReadString), 120) != HAL_OK)
+		    	{
+		    		HAL_Delay(5000);
+		    	}
         // Zmieñ stan diody LD2 na ON (wysoki)
         //HAL_GPIO_WritePin(LD2_GPIO_PORT, LD2_PIN, GPIO_PIN_SET);
 
@@ -543,6 +551,43 @@ static void MX_I2C1_Init(void)
     HAL_I2C_Init(&hi2c1);
 
 }
+
+static void MX_I2C3_Init(void)
+{
+
+	GPIO_InitTypeDef gpio_I2C3_SDA;
+	gpio_I2C3_SDA.Pin = /*GPIO_PIN_4 |*/GPIO_PIN_4;
+	gpio_I2C3_SDA.Mode = GPIO_MODE_AF_OD;
+			//SDA
+	gpio_I2C3_SDA.Pull = GPIO_NOPULL;
+	gpio_I2C3_SDA.Alternate = GPIO_AF4_I2C3;
+	gpio_I2C3_SDA.Speed = GPIO_SPEED_HIGH;
+	HAL_GPIO_Init(GPIOB, &gpio_I2C3_SDA);
+
+	GPIO_InitTypeDef gpio_I2C3_SCL;
+	gpio_I2C3_SCL.Pin = /*GPIO_PIN_4 |*/GPIO_PIN_8;
+	gpio_I2C3_SCL.Mode = GPIO_MODE_AF_OD;
+			// SCL
+	gpio_I2C3_SCL.Pull = GPIO_NOPULL;
+	gpio_I2C3_SCL.Alternate = GPIO_AF4_I2C3;
+	gpio_I2C3_SCL.Speed = GPIO_SPEED_HIGH;
+	HAL_GPIO_Init(GPIOA, &gpio_I2C3_SCL);
+
+	__HAL_RCC_I2C3_CLK_ENABLE();
+
+    hi2c3.Instance = I2C3;
+    hi2c3.Init.ClockSpeed = 100000;
+    hi2c3.Init.DutyCycle = I2C_DUTYCYCLE_2;
+    hi2c3.Init.OwnAddress1 = 0;
+    hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+    hi2c3.Init.OwnAddress2 = 0;
+    hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+    hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+    HAL_I2C_Init(&hi2c3);
+
+}
+
 
 static void MX_TIM2_Init(void)
 {

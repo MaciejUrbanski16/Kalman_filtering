@@ -21,16 +21,16 @@ void initHMC5883L()
 	array[0] = 1;
 	array[1] = 0x1D;
 
-	HAL_I2C_Mem_Write(&hi2c1, 0x1A, 0x0B, 1, &array[0], 1, 100);
-	HAL_I2C_Mem_Write(&hi2c1, 0x1A, 0x09, 1, &array[1], 1, 100);
+	HAL_I2C_Mem_Write(&hi2c1, HMC5883L_ADRESS, 0x0B, 1, &array[0], 1, 100);
+	HAL_I2C_Mem_Write(&hi2c1, HMC5883L_ADRESS, 0x09, 1, &array[1], 1, 100);
 }
 
 void waitTillMagnetometerIsInitialized()
 {
 	while (HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)HMC5883L_ADRESS, 10, 100) != HAL_OK)
 	{
-		lcdClear();
-		lcdSendString ("HMCnotready");
+//		lcdClear();
+//		lcdSendString ("HMCnotready");
 
 		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 		HAL_Delay(500);

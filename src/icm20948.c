@@ -71,26 +71,30 @@ GyroData readGyroData()
 {
 	GyroData gyroData;
 
-    uint8_t rawX_data[2];
-    uint8_t rawY_data[2];
-    uint8_t rawZ_data[2];
+    int8_t rawX_data[2];
+    int8_t rawY_data[2];
+    int8_t rawZ_data[2];
+
+    uint8_t rawLowGyroX[1];
+    uint8_t rawHighGyroX[1];
 
     if(HAL_I2C_Mem_Read(&hi2c1, ICM20948_ADDRESS << 1, B0_GYRO_XOUT_H, 1, rawX_data, 2, 100) != HAL_OK)
     {
     	HAL_Delay(5000);
     	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
     }
-    HAL_Delay(50);
-    gyroData.xGyro = (rawX_data[0] << 8) | rawX_data[1];
+
+    HAL_Delay(30);
+    gyroData.xGyro = (rawX_data[0] << 8) + rawX_data[1];// | rawLowGyroX[0];
 
     if(HAL_I2C_Mem_Read(&hi2c1, ICM20948_ADDRESS << 1, B0_GYRO_YOUT_H, 1, rawY_data, 2, 100) != HAL_OK)
     {
     	HAL_Delay(5000);
     	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
     }
-    HAL_Delay(50);
+    HAL_Delay(30);
 
-    gyroData.yGyro = (rawY_data[0] << 8) | rawY_data[1];
+    gyroData.yGyro = (rawY_data[0] << 8) + rawY_data[1];
 
     if(HAL_I2C_Mem_Read(&hi2c1, ICM20948_ADDRESS << 1, B0_GYRO_ZOUT_H, 1, rawZ_data, 2, 100) != HAL_OK)
     {
@@ -99,7 +103,7 @@ GyroData readGyroData()
     }
 
 
-    gyroData.zGyro = (rawZ_data[0] << 8) | rawZ_data[1];
+    gyroData.zGyro = (rawZ_data[0] << 8) + rawZ_data[1];
 
 	return gyroData;
 }

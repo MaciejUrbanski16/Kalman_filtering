@@ -145,7 +145,7 @@ int main(void)
 //	}
 
 
-	while (HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)ICM20948_ADDRESS << 1, 10, 100) != HAL_OK)
+	while (HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)ICM20948_ADDRESS << 1, 10, 200) != HAL_OK)
 	{
 //		lcdClear();
 //		lcdSendString ("HMCnotready");
@@ -156,26 +156,26 @@ int main(void)
 	setUserBank(ub_0);
 	uint8_t val = 0xc1;
 
-    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B0_PWR_MGMT_1, 1, 0xc1, 1, 100) != HAL_OK)
+    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B0_PWR_MGMT_1, 1, 0xc1, 1, 200) != HAL_OK)
     {
     	HAL_Delay(5000);
     }
-    HAL_Delay(100);
-    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B0_PWR_MGMT_1, 1, 0x01, 1, 100) != HAL_OK)
+    HAL_Delay(200);
+    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B0_PWR_MGMT_1, 1, 0x01, 1, 200) != HAL_OK)
     {
     	HAL_Delay(5000);
     }
 
-    HAL_Delay(100);
-    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B0_PWR_MGMT_2, 1, 0x00, 1, 100) != HAL_OK)
+    HAL_Delay(200);
+    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B0_PWR_MGMT_2, 1, 0x00, 1, 200) != HAL_OK)
     {
     	HAL_Delay(5000);
     }
 
     setUserBank(ub_2);
-    HAL_Delay(100);
+    HAL_Delay(200);
     //output data rate start time alignment
-    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ODR_ALIGN_EN, 1, 0x01, 1, 100) != HAL_OK)
+    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ODR_ALIGN_EN, 1, 0x01, 1, 200) != HAL_OK)
     {
     	HAL_Delay(5000);
     }
@@ -186,38 +186,38 @@ int main(void)
 //    	HAL_Delay(5000);
 //    }
 
-    HAL_Delay(100);
+    HAL_Delay(200);
     //gyroscope configuration, sample rate divider = 0
-    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_GYRO_SMPLRT_DIV, 1, 0x00, 1, 100) != HAL_OK)
+    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_GYRO_SMPLRT_DIV, 1, 0x00, 1, 200) != HAL_OK)
     {
     	HAL_Delay(5000);
     }
 
-    HAL_Delay(100);
+    HAL_Delay(200);
     //gyroscope configuration, gyroscope range set and enable digital filtering
     uint8_t dps_250_lpf = 0b00000001;
-    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_GYRO_CONFIG_1, 1, dps_250_lpf, 1, 100) != HAL_OK)
+    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_GYRO_CONFIG_1, 1, dps_250_lpf, 1, 200) != HAL_OK)
     {
     	HAL_Delay(5000);
     }
     gyroScale = 250.0f/gyroRawScaling * _d2r;
 
-    HAL_Delay(100);
+    HAL_Delay(200);
     //accelerometr configuration, sample rate divider = 0
-    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ACCEL_SMPLRT_DIV_1, 1, 0x00, 1, 100) != HAL_OK)
+    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ACCEL_SMPLRT_DIV_1, 1, 0x00, 1, 200) != HAL_OK)
     {
     	HAL_Delay(5000);
     }
-    HAL_Delay(10);
-    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ACCEL_SMPLRT_DIV_2, 1, 0x00, 1, 100) != HAL_OK)
+    HAL_Delay(200);
+    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ACCEL_SMPLRT_DIV_2, 1, 0x00, 1, 200) != HAL_OK)
     {
     	HAL_Delay(5000);
     }
 
-    HAL_Delay(100);
+    HAL_Delay(200);
     uint8_t accel_config_2g_lpf = 0b00000001;
     //accelerometr configuration, accelerometr range set and enable digital filtering
-    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ACCEL_CONFIG, 1, accel_config_2g_lpf, 1, 100) != HAL_OK)
+    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ACCEL_CONFIG, 1, accel_config_2g_lpf, 1, 200) != HAL_OK)
     {
     	HAL_Delay(5000);
     }
@@ -228,7 +228,8 @@ int main(void)
     initMagnetometr();
 
     //read data (8 registers for magn data starting from reg 0x11 (HXL))
-    ak9916_magn_read_reg(MAG_HXL, 8);
+    HAL_Delay(200);
+    //ak9916_magn_read_reg(MAG_HXL, 8);
 
     setUserBank(ub_0);
 
@@ -246,12 +247,12 @@ int main(void)
 
 //    	const int16_t xAccDecimal = (int16_t)(accelData.xAcc * 10000);
 //    	const int16_t yAccDecimal = (int16_t)(accelData.yAcc * 10000);
-    	const int16_t zAccDecimal = (int16_t)(accelData.zAcc * 10000);
-    	float  _az = (((float)accelData.zAcc * accelScale))*azs;
+//    	const int16_t zAccDecimal = (int16_t)(accelData.zAcc * 10000);
+//    	float  _az = (((float)accelData.zAcc * accelScale))*azs;
 //    	sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> xAcc:%d.%d yAcc:%d.%d, zAcc:%d.%d\r\n",
 //    			accelData.devAddr, (int16_t)accelData.xAcc, xAccDecimal,  (int16_t)accelData.yAcc, yAccDecimal, (int16_t)accelData.zAcc, zAccDecimal);
-    	sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> zAcc:%d.%d rawZ:%d\r\n",
-    			accelData.devAddr, (int16_t)_az, zAccDecimal, accelData.zAcc);
+//    	sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> zAcc:%d.%d rawZ:%d\r\n",
+//    			accelData.devAddr, (int16_t)_az, zAccDecimal, accelData.zAcc);
 
     	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 //    	const uint16_t xGyroDecimal = (uint16_t)(gyroData.xGyro * 10000);
@@ -259,25 +260,26 @@ int main(void)
 //    	const uint16_t zGyroDecimal = (uint16_t)(gyroData.zGyro * 10000);
     	float _gx = ((float)gyroData.xGyro * gyroScale);
     	const int16_t xGyroDecimal = (int16_t)(_gx * 10000);
-//    	float _gy = ((float)gyroData.yGyro * gyroScale);
-//    	const int16_t yGyroDecimal = (int16_t)(_gy * 10000);
-//    	float _gz = ((float)gyroData.zGyro * gyroScale);
-//    	const int16_t zGyroDecimal = (int16_t)(_gz * 10000);
-    	//sprintf(gyroReadString, "GYROSCOPE: xGyro:%d, yGyro:%d, zGyro:%d\r\n", gyroData.xGyro, gyroData.yGyro, gyroData.zGyro);
+    	float _gy = ((float)gyroData.yGyro * gyroScale);
+    	const int16_t yGyroDecimal = (int16_t)(_gy * 10000);
+    	float _gz = ((float)gyroData.zGyro * gyroScale);
+    	const int16_t zGyroDecimal = (int16_t)(_gz * 10000);
+    	sprintf(gyroReadString, "GYROSCOPE: xGyro:%d, yGyro:%d, zGyro:%d\r\n", gyroData.xGyro, gyroData.yGyro, gyroData.zGyro);
+    	//sprintf(gyroReadString, "GYROSCOPE DECIMAL: xGyro:%d, yGyro:%d, zGyro:%d\r\n", xGyroDecimal, yGyroDecimal, zGyroDecimal);
 
 
     	//sprintf(gyroReadString, "GYROSCOPE: xGyro:%d.%d\r\n", (int16_t)_gx, xGyroDecimal);
 
 //    	sprintf(magnReadString, "MAGNETOMETR x:%d y:%d z:%d \r\n", magnData.xMagn, magnData.yMagn, magnData.zMagn);
 
-    	if(HAL_UART_Transmit(&huart2, accReadString, strlen(accReadString), 20) != HAL_OK)
-    	{
-    		HAL_Delay(5000);
-    	}
-//    	if(HAL_UART_Transmit(&huart2, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
+//    	if(HAL_UART_Transmit(&huart2, accReadString, strlen(accReadString), 20) != HAL_OK)
 //    	{
 //    		HAL_Delay(5000);
 //    	}
+    	if(HAL_UART_Transmit(&huart2, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
+    	{
+    		HAL_Delay(5000);
+    	}
 //    	if(HAL_UART_Transmit(&huart2, magnReadString, strlen(magnReadString), 120) != HAL_OK)
 //    	{
 //    		HAL_Delay(5000);

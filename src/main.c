@@ -10,7 +10,7 @@
 GPIO_InitTypeDef GPIO_InitStruct;
 UART_HandleTypeDef huart1, huart2, huart6;
 I2C_HandleTypeDef hi2c1, hi2c3;
-TIM_HandleTypeDef timer2;
+TIM_HandleTypeDef timer2, timer3, timer4;
 
 float azs = 1.0f;
 float accelScale = 0.0f;
@@ -32,21 +32,48 @@ void MX_USART6_UART_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM3_Init(void);
+static void MX_TIM4_Init(void);
 
 volatile uint8_t rec[10];
+
+volatile uint8_t magnReadFlag = 0;
+volatile uint8_t accReadFlag = 0;
+volatile uint8_t gyroReadFlag = 0;
 
 void TIM2_IRQHandler(void)
 {
   HAL_TIM_IRQHandler(&timer2);
 }
 
+void TIM3_IRQHandler(void)
+{
+  HAL_TIM_IRQHandler(&timer3);
+}
+
+void TIM4_IRQHandler(void)
+{
+  HAL_TIM_IRQHandler(&timer4);
+}
+
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM2)
 	{
-		{
-
-		}
+		//HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+		magnReadFlag = 1;
+		gyroReadFlag = 1;
+	}
+	else if(htim->Instance == TIM3)
+	{
+		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+		accReadFlag = 1;
+	}
+	else if(htim->Instance == TIM4)
+	{
+		//HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+		//gyroReadFlag = 1;
 	}
 }
 int main(void)
@@ -62,18 +89,20 @@ int main(void)
 	__HAL_RCC_GPIOA_CLK_ENABLE();
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 	__HAL_RCC_GPIOC_CLK_ENABLE();
-	__USART1_CLK_ENABLE();
+	//__USART1_CLK_ENABLE();
 	__USART2_CLK_ENABLE();
 	__USART6_CLK_ENABLE();
 
-	//MX_USART6_UART_Init(); // !! this impacts husart2
+	MX_USART6_UART_Init(); // !! this impacts husart2
 	MX_USART2_UART_Init();
-	MX_USART1_UART_Init();
+	//MX_USART1_UART_Init();
 
 
 	MX_I2C1_Init();
 	MX_I2C3_Init();
-	//MX_TIM2_Init();
+	MX_TIM2_Init();
+	MX_TIM3_Init();
+	//MX_TIM4_Init();
 
 	float degree = 0.0;
 	char accReadString[64] = "";
@@ -176,55 +205,78 @@ int main(void)
 
     while (1)
     {
-    	HAL_Delay(100);
+    	HAL_Delay(5);
     	AccelData accelData = readAccData();
-    	HAL_Delay(100);
-    	GyroData gyroData = readGyroData();
-    	HAL_Delay(100);
-    	MagnData magnData = readMagnData();
-
-    	//if(1 == checkAvalibilityOfDataInRegister())
+    	if(accReadFlag == 1)
     	{
+
+
+			const int16_t xAccDecimal = (int16_t)(accelData.xAcc * 10000);
+			const int16_t yAccDecimal = (int16_t)(accelData.yAcc * 10000);
+			const int16_t zAccDecimal = (int16_t)(accelData.zAcc * 10000);
+			float  _az = (((float)accelData.zAcc * accelScale))*azs;
+	//    	sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> xAcc:%d.%d yAcc:%d.%d, zAcc:%d.%d\r\n",
+	//    			accelData.devAddr, (int16_t)accelData.xAcc, xAccDecimal,  (int16_t)accelData.yAcc, yAccDecimal, (int16_t)accelData.zAcc, zAccDecimal);
+			sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> zAcc:%d.%d rawZ:%d\r\n",
+					accelData.devAddr, (int16_t)_az, zAccDecimal, accelData.zAcc);
+	    	if(HAL_UART_Transmit(&huart2, accReadString, strlen(accReadString), 20) != HAL_OK)
+	    	{
+	    		HAL_Delay(5000);
+	    	}
+	    	accReadFlag = 0;
+
+
     	}
+    	HAL_Delay(10);
+    	GyroData gyroData = readGyroData();
+    	if(gyroReadFlag == 1)
+    	{
 
+	    	float _gx = ((float)gyroData.xGyro * gyroScale);
+	    	const int16_t xGyroDecimal = (int16_t)(_gx * 10000);
+	    	float _gy = ((float)gyroData.yGyro * gyroScale);
+	    	const int16_t yGyroDecimal = (int16_t)(_gy * 10000);
+	    	float _gz = ((float)gyroData.zGyro * gyroScale);
+	    	const int16_t zGyroDecimal = (int16_t)(_gz * 10000);
+	    	sprintf(gyroReadString, "GYROSCOPE: xGyro:%d, yGyro:%d, zGyro:%d\r\n", gyroData.xGyro, gyroData.yGyro, gyroData.zGyro);
+//	    	if(HAL_UART_Transmit(&huart6, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
+//	    	{
+//	    	  	HAL_Delay(5000);
+//	    	}
+	    	if(HAL_UART_Transmit(&huart2, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
+	    	{
+	    	  	HAL_Delay(5000);
+	    	}
+	    	gyroReadFlag = 0;
+    	}
+    	{
+        	MagnData magnData = readMagnData();
+    	}
+    	//HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 
-    	const int16_t xAccDecimal = (int16_t)(accelData.xAcc * 10000);
-    	const int16_t yAccDecimal = (int16_t)(accelData.yAcc * 10000);
-    	const int16_t zAccDecimal = (int16_t)(accelData.zAcc * 10000);
-    	float  _az = (((float)accelData.zAcc * accelScale))*azs;
-//    	sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> xAcc:%d.%d yAcc:%d.%d, zAcc:%d.%d\r\n",
-//    			accelData.devAddr, (int16_t)accelData.xAcc, xAccDecimal,  (int16_t)accelData.yAcc, yAccDecimal, (int16_t)accelData.zAcc, zAccDecimal);
-    	sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> zAcc:%d.%d rawZ:%d\r\n",
-    			accelData.devAddr, (int16_t)_az, zAccDecimal, accelData.zAcc);
-
-    	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 //    	const uint16_t xGyroDecimal = (uint16_t)(gyroData.xGyro * 10000);
 //    	const uint16_t yGyroDecimal = (uint16_t)(gyroData.yGyro * 10000);
 //    	const uint16_t zGyroDecimal = (uint16_t)(gyroData.zGyro * 10000);
-    	float _gx = ((float)gyroData.xGyro * gyroScale);
-    	const int16_t xGyroDecimal = (int16_t)(_gx * 10000);
-    	float _gy = ((float)gyroData.yGyro * gyroScale);
-    	const int16_t yGyroDecimal = (int16_t)(_gy * 10000);
-    	float _gz = ((float)gyroData.zGyro * gyroScale);
-    	const int16_t zGyroDecimal = (int16_t)(_gz * 10000);
-    	sprintf(gyroReadString, "GYROSCOPE: xGyro:%d, yGyro:%d, zGyro:%d\r\n", gyroData.xGyro, gyroData.yGyro, gyroData.zGyro);
+//    	float _gx = ((float)gyroData.xGyro * gyroScale);
+//    	const int16_t xGyroDecimal = (int16_t)(_gx * 10000);
+//    	float _gy = ((float)gyroData.yGyro * gyroScale);
+//    	const int16_t yGyroDecimal = (int16_t)(_gy * 10000);
+//    	float _gz = ((float)gyroData.zGyro * gyroScale);
+//    	const int16_t zGyroDecimal = (int16_t)(_gz * 10000);
+//    	sprintf(gyroReadString, "GYROSCOPE: xGyro:%d, yGyro:%d, zGyro:%d\r\n", gyroData.xGyro, gyroData.yGyro, gyroData.zGyro);
     	//sprintf(gyroReadString, "GYROSCOPE DECIMAL: xGyro:%d, yGyro:%d, zGyro:%d\r\n", xGyroDecimal, yGyroDecimal, zGyroDecimal);
 
 
     	//sprintf(gyroReadString, "GYROSCOPE: xGyro:%d.%d\r\n", (int16_t)_gx, xGyroDecimal);
 
 //    	sprintf(magnReadString, "MAGNETOMETR x:%d y:%d z:%d \r\n", magnData.xMagn, magnData.yMagn, magnData.zMagn);
-    	HAL_Delay(100);
-//    	if(HAL_UART_Transmit(&huart2, accReadString, strlen(accReadString), 20) != HAL_OK)
+    	HAL_Delay(1);
+
+
+//    	if(HAL_UART_Transmit(&huart2, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
 //    	{
 //    		HAL_Delay(5000);
 //    	}
-
-    	HAL_Delay(100);
-    	if(HAL_UART_Transmit(&huart2, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
-    	{
-    		HAL_Delay(5000);
-    	}
 //    	HAL_Delay(100);
 //    	if(HAL_UART_Transmit(&huart6, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
 //    	{
@@ -234,20 +286,24 @@ int main(void)
 //    	{
 //    		HAL_Delay(5000);
 //    	}
-    	HAL_Delay(100);
-		degree = calculateAzimutWithDegree();
-		sprintf(magnReadString, "MAGNETOMETR x:%d \r\n", (int16_t)degree);
-		    	if(HAL_UART_Transmit(&huart2, magnReadString, strlen(magnReadString), 120) != HAL_OK)
-		    	{
-		    		HAL_Delay(5000);
-		    	}
-		    	HAL_Delay(100);
-//		    	if(HAL_UART_Transmit(&huart6, magnReadString, strlen(magnReadString), 120) != HAL_OK)
-//		    	{
-//		    		HAL_Delay(5000);
-//		    	}
-//		    	HAL_Delay(100);
-        //HAL_UART_Receive_IT(&huart2, &rec, 1);
+    	HAL_Delay(1);
+    	if(magnReadFlag == 1)
+    	{
+			degree = calculateAzimutWithDegree();
+			sprintf(magnReadString, "MAGNETOMETR x:%d \r\n", (int16_t)degree);
+//					if(HAL_UART_Transmit(&huart2, magnReadString, strlen(magnReadString), 120) != HAL_OK)
+//					{
+//						HAL_Delay(5000);
+//					}
+//					HAL_Delay(1);
+	//		    	if(HAL_UART_Transmit(&huart6, magnReadString, strlen(magnReadString), 120) != HAL_OK)
+	//		    	{
+	//		    		HAL_Delay(5000);
+	//		    	}
+	//		    	HAL_Delay(100);
+			//HAL_UART_Receive_IT(&huart2, &rec, 1);
+					magnReadFlag = 0;
+    	}
     }
 }
 
@@ -555,9 +611,10 @@ static void MX_I2C3_Init(void)
 
 static void MX_TIM2_Init(void)
 {
+	//magnetometr timer
 	__HAL_RCC_TIM2_CLK_ENABLE();
 
-	const uint16_t durationBetweenSendingTwoMeasurementsInMs = 900;
+	const uint16_t durationBetweenSendingTwoMeasurementsInMs = 2000;
 
 	timer2.Instance = TIM2;
 	timer2.Init.Period = durationBetweenSendingTwoMeasurementsInMs - 1;
@@ -571,4 +628,46 @@ static void MX_TIM2_Init(void)
 
 	HAL_NVIC_EnableIRQ(TIM2_IRQn);
 	HAL_TIM_Base_Start_IT(&timer2);
+}
+
+static void MX_TIM3_Init(void)
+{
+	//accelerometr timer
+	__HAL_RCC_TIM3_CLK_ENABLE();
+
+	const uint16_t durationBetweenSendingTwoMeasurementsInMs = 2000;
+
+	timer3.Instance = TIM3;
+	timer3.Init.Period = durationBetweenSendingTwoMeasurementsInMs - 1;
+	timer3.Init.Prescaler = 8000 - 1;
+	timer3.Init.ClockDivision = 0;
+	timer3.Init.CounterMode = TIM_COUNTERMODE_UP;
+	timer3.Init.RepetitionCounter = 0;
+	timer3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+	HAL_TIM_Base_Init(&timer3);
+
+	HAL_NVIC_EnableIRQ(TIM3_IRQn);
+	HAL_TIM_Base_Start_IT(&timer3);
+}
+
+static void MX_TIM4_Init(void)
+{
+	//gyroscope timer
+	__HAL_RCC_TIM4_CLK_ENABLE();
+
+	const uint16_t durationBetweenSendingTwoMeasurementsInMs = 24000;
+
+	timer4.Instance = TIM4;
+	timer4.Init.Period = durationBetweenSendingTwoMeasurementsInMs - 1;
+	timer4.Init.Prescaler = 8000 - 1;
+	timer4.Init.ClockDivision = 0;
+	timer4.Init.CounterMode = TIM_COUNTERMODE_UP;
+	timer4.Init.RepetitionCounter = 0;
+	timer4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+	HAL_TIM_Base_Init(&timer4);
+
+	HAL_NVIC_EnableIRQ(TIM4_IRQn);
+	HAL_TIM_Base_Start_IT(&timer4);
 }

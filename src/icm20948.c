@@ -169,7 +169,7 @@ GyroData readGyroData()
     	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
     }
 
-    HAL_Delay(30);
+    HAL_Delay(5);
     gyroData.xGyro = (rawX_data[0] << 8) + rawX_data[1];// | rawLowGyroX[0];
 
     if(HAL_I2C_Mem_Read(&hi2c1, ICM20948_ADDRESS << 1, B0_GYRO_YOUT_H, 1, rawY_data, 2, 100) != HAL_OK)
@@ -177,7 +177,7 @@ GyroData readGyroData()
     	HAL_Delay(5000);
     	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
     }
-    HAL_Delay(30);
+    HAL_Delay(5);
 
     gyroData.yGyro = (rawY_data[0] << 8) + rawY_data[1];
 
@@ -209,7 +209,7 @@ MagnData readMagnData()
     	HAL_Delay(5000);
     	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
     }
-    HAL_Delay(50);
+    HAL_Delay(5);
 
     magnData.xMagn = rawData[1] << 8 | rawData[0];
     magnData.yMagn = rawData[3] << 8 | rawData[2];

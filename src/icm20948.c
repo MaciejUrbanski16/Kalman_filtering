@@ -5,10 +5,95 @@ extern UART_HandleTypeDef huart2;
 const float g = 9.81;
 const float rawGrawity = 16532.0;
 
+
+
 void ICM20948_ReadData(uint8_t reg, uint8_t* data, uint16_t size)
 {
     HAL_I2C_Master_Transmit(&hi2c1, ICM20948_ADDRESS, &reg, 1, HAL_MAX_DELAY);
     HAL_I2C_Master_Receive(&hi2c1, ICM20948_ADDRESS, data, size, HAL_MAX_DELAY);
+}
+
+void initAccMagn()
+{
+//    uint8_t whoAmIReg = 0x00; // Adres rejestru akcelerometru
+//    uint8_t whoAmIValue[1];
+//
+//    HAL_Delay(100);
+//
+//	while (HAL_I2C_IsDeviceReady(&hi2c1, (uint16_t)ICM20948_ADDRESS << 1, 10, 200) != HAL_OK)
+//	{
+//		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+//		HAL_Delay(500);
+//	}
+//	setUserBank(ub_0);
+//	uint8_t val = 0xc1;
+//	HAL_Delay(200);
+//    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B0_PWR_MGMT_1, 1, 0xc1, 1, 200) != HAL_OK)
+//    {
+//    	HAL_Delay(5000);
+//    }
+//    HAL_Delay(200);
+//    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B0_PWR_MGMT_1, 1, 0x01, 1, 200) != HAL_OK)
+//    {
+//    	HAL_Delay(5000);
+//    }
+//
+//    HAL_Delay(200);
+//    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B0_PWR_MGMT_2, 1, 0x00, 1, 200) != HAL_OK)
+//    {
+//    	HAL_Delay(5000);
+//    }
+//    HAL_Delay(100);
+//    setUserBank(ub_2);
+//    HAL_Delay(200);
+//    //output data rate start time alignment
+//    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ODR_ALIGN_EN, 1, 0x01, 1, 200) != HAL_OK)
+//    {
+//    	HAL_Delay(5000);
+//    }
+////    HAL_Delay(100);
+////    //gyroscope configuration, gyroscope range set and enable digital filtering
+////    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_GYRO_CONFIG, 1, 0x00, 1, 100) != HAL_OK)
+////    {
+////    	HAL_Delay(5000);
+////    }
+//
+//    HAL_Delay(200);
+//    //gyroscope configuration, sample rate divider = 0
+//    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_GYRO_SMPLRT_DIV, 1, 0x00, 1, 100) != HAL_OK)
+//    {
+//    	HAL_Delay(5000);
+//    }
+//
+//    HAL_Delay(200);
+//    //gyroscope configuration, gyroscope range set and enable digital filtering
+//    uint8_t dps_250_lpf = 0b00000001;
+//    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_GYRO_CONFIG_1, 1, dps_250_lpf, 1, 100) != HAL_OK)
+//    {
+//    	HAL_Delay(5000);
+//    }
+//    gyroScale = 250.0f/gyroRawScaling * _d2r;
+//
+//    HAL_Delay(200);
+//    //accelerometr configuration, sample rate divider = 0
+//    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ACCEL_SMPLRT_DIV_1, 1, 0x00, 1, 100) != HAL_OK)
+//    {
+//    	HAL_Delay(5000);
+//    }
+//    HAL_Delay(200);
+//    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ACCEL_SMPLRT_DIV_2, 1, 0x00, 1, 100) != HAL_OK)
+//    {
+//    	HAL_Delay(5000);
+//    }
+//
+//    HAL_Delay(200);
+//    uint8_t accel_config_2g_lpf = 0b00000001;
+//    //accelerometr configuration, accelerometr range set and enable digital filtering
+//    if(HAL_I2C_Mem_Write(&hi2c1, ICM20948_ADDRESS << 1, B2_ACCEL_CONFIG, 1, accel_config_2g_lpf, 1, 200) != HAL_OK)
+//    {
+//    	HAL_Delay(5000);
+//    }
+//    accelScale = G * 2.0f/accelRawScaling; // setting the accel scale to 2G
 }
 
 AccelData readAccData()

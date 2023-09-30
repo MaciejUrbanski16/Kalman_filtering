@@ -165,7 +165,6 @@
 #define MAG_TS1							0x33
 #define MAG_TS2							0x34
 
-
 typedef enum
 {
 	ub_0 = 0 << 4,
@@ -209,7 +208,7 @@ GyroData readGyroData();
 
 MagnData readMagnData();
 
-
+void initAccGyro();
 void setUserBank(userbank ub);
 
 uint16_t accel_data[1];

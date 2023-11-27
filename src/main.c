@@ -3,6 +3,7 @@
 #include "lcd_display.h"
 #include "magnetometr.h"
 #include "icm20948.h"
+#include "gps.h"
 
 #define LD2_PIN GPIO_PIN_5
 #define LD2_GPIO_PORT GPIOA
@@ -58,6 +59,13 @@ void TIM4_IRQHandler(void)
   HAL_TIM_IRQHandler(&timer4);
 }
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart == GpsState.neo6_huart)
+	{
+		NEO6_ReceiveUartChar(&GpsState);
+	}
+}
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -91,13 +99,15 @@ int main(void)
 	__HAL_RCC_GPIOA_CLK_ENABLE();
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 	__HAL_RCC_GPIOC_CLK_ENABLE();
-	//__USART1_CLK_ENABLE();
+	//
 	__USART2_CLK_ENABLE();
 	__USART6_CLK_ENABLE();
 
 	MX_USART6_UART_Init(); // !! this impacts husart2
 	MX_USART2_UART_Init();
+	//__USART1_CLK_ENABLE();
 	//MX_USART1_UART_Init();
+
 
 
 	MX_I2C1_Init();
@@ -110,6 +120,7 @@ int main(void)
 	char accReadString[64] = "";
 	char gyroReadString[64] = "";
 	char magnReadString[32] = "";
+	char gpsReadString[64] = "";
 
 	HAL_Delay(100);
 	//initAccGyro();
@@ -215,8 +226,18 @@ int main(void)
 
     int16_t degreeMagn = 0;
 
+//    NEO6_Init(&GpsState, &huart6);
+
     while (1)
     {
+
+//    	NEO6_Task(&GpsState);
+//    	HAL_Delay(1000);
+//		if(NEO6_IsFix(&GpsState))
+//		{
+//			  sprintf(gpsReadString, "UTC Time: %02d:%02d:%02d\r\n", GpsState.Hour, GpsState.Minute, GpsState.Second);
+//			  HAL_UART_Transmit(&huart2, gpsReadString, strlen(gpsReadString), 100);
+//		}
     	if(accReadFlag == 1)
     	{
 
@@ -247,9 +268,9 @@ int main(void)
 	    	float _gz = ((float)gyroData.zGyro * gyroScale);
 	    	const int16_t zGyroDecimal = (int16_t)(_gz * 10000);
 
-	    	//degree = calculateAzimutWithDegree();
+//	    	degree = calculateAzimutWithDegree();
 
-	    	sprintf(gyroReadString, "ACC %d %d %d GYR %d %d %d MAGN %d\r\n",
+	    	sprintf(gyroReadString, "%d_%d_%d_%d_%d_%d_%d\r\n",
 	    			accelData.xAcc, accelData.yAcc, accelData.zAcc, gyroData.xGyro, gyroData.yGyro, gyroData.zGyro, (int16_t)(degree));
 //	    	if(HAL_UART_Transmit(&huart6, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
 //	    	{
@@ -442,7 +463,7 @@ void MX_USART1_UART_Init(void)
 
 
     huart1.Instance = USART1;
-    huart1.Init.BaudRate = 115200;
+    huart1.Init.BaudRate = 9600;
     huart1.Init.WordLength = UART_WORDLENGTH_8B;
     huart1.Init.StopBits = UART_STOPBITS_1;
     huart1.Init.Parity = UART_PARITY_NONE;
@@ -481,8 +502,8 @@ void MX_USART2_UART_Init(void)
 //    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
     HAL_UART_Init(&huart2);
 
-	__HAL_UART_ENABLE_IT(&huart2,  UART_IT_RXNE);
-	HAL_NVIC_EnableIRQ(USART2_IRQn);
+//	__HAL_UART_ENABLE_IT(&huart2,  UART_IT_RXNE);
+//	HAL_NVIC_EnableIRQ(USART2_IRQn);
 }
 
 void MX_USART6_UART_Init(void)
@@ -510,8 +531,8 @@ void MX_USART6_UART_Init(void)
 //    huart6.Init.OverSampling = UART_OVERSAMPLING_16;
     HAL_UART_Init(&huart6);
 
-	//__HAL_UART_ENABLE_IT(&huart6,  UART_IT_RXNE);
-	//HAL_NVIC_EnableIRQ(USART6_IRQn);
+	__HAL_UART_ENABLE_IT(&huart6,  UART_IT_RXNE);
+	HAL_NVIC_EnableIRQ(USART6_IRQn);
 }
 
 static void MX_I2C1_Init(void)

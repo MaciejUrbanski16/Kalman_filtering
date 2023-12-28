@@ -10,7 +10,7 @@
 
 GPIO_InitTypeDef GPIO_InitStruct;
 UART_HandleTypeDef huart1, huart2, huart6;
-I2C_HandleTypeDef hi2c1, hi2c3;
+I2C_HandleTypeDef hi2c1, hi2c2;
 TIM_HandleTypeDef timer2, timer3, timer4;
 
 float azs = 1.0f;
@@ -33,6 +33,7 @@ void MX_USART2_UART_Init(void);
 void MX_USART6_UART_Init(void);
 
 static void MX_I2C1_Init(void);
+static void MX_I2C2_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
@@ -111,7 +112,8 @@ int main(void)
 
 
 	MX_I2C1_Init();
-	MX_I2C3_Init();
+	MX_I2C2_Init();
+	//MX_I2C3_Init();
 	MX_TIM2_Init();
 	MX_TIM3_Init();
 	//MX_TIM4_Init();
@@ -268,10 +270,13 @@ int main(void)
 	    	float _gz = ((float)gyroData.zGyro * gyroScale);
 	    	const int16_t zGyroDecimal = (int16_t)(_gz * 10000);
 
-//	    	degree = calculateAzimutWithDegree();
+	    	//degree = calculateAzimutWithDegree();
 
-	    	sprintf(gyroReadString, "%d_%d_%d_%d_%d_%d_%d\r\n",
-	    			accelData.xAcc, accelData.yAcc, accelData.zAcc, gyroData.xGyro, gyroData.yGyro, gyroData.zGyro, (int16_t)(degree));
+	    	OrientationInSpace rawOrientationInSpace = readRawDataFromMagnetometer();
+
+	    	sprintf(gyroReadString, "%d_%d_%d_%d_%d_%d_%d_%d_\r\n",
+	    			accelData.xAcc, accelData.yAcc, accelData.zAcc, gyroData.xGyro, gyroData.yGyro, gyroData.zGyro,
+					rawOrientationInSpace.xAxis, rawOrientationInSpace.yAxis);
 //	    	if(HAL_UART_Transmit(&huart6, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
 //	    	{
 //	    	  	HAL_Delay(5000);
@@ -479,6 +484,8 @@ void MX_USART1_UART_Init(void)
 	HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
 }
 
+
+
 void MX_USART2_UART_Init(void)
 {
     GPIO_InitStruct.Pin = GPIO_PIN_2;
@@ -562,11 +569,38 @@ static void MX_I2C1_Init(void)
 
 }
 
+static void MX_I2C2_Init(void)
+{
+
+	GPIO_InitTypeDef gpio_I2C2_SDA_SCL;
+	gpio_I2C2_SDA_SCL.Pin = /*GPIO_PIN_4 |*/GPIO_PIN_3 | GPIO_PIN_10;
+	gpio_I2C2_SDA_SCL.Mode = GPIO_MODE_AF_OD;
+			// SCL, SDA
+	gpio_I2C2_SDA_SCL.Pull = GPIO_NOPULL;
+	gpio_I2C2_SDA_SCL.Alternate = GPIO_AF4_I2C2;
+	gpio_I2C2_SDA_SCL.Speed = GPIO_SPEED_HIGH;
+	HAL_GPIO_Init(GPIOB, &gpio_I2C2_SDA_SCL);
+
+	__HAL_RCC_I2C2_CLK_ENABLE();
+
+    hi2c2.Instance = I2C2;
+    hi2c2.Init.ClockSpeed = 100000;
+    hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+    hi2c2.Init.OwnAddress1 = 0;
+    hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+    hi2c2.Init.OwnAddress2 = 0;
+    hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+    hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+    HAL_I2C_Init(&hi2c2);
+
+}
+
 static void MX_I2C3_Init(void)
 {
 
-	GPIO_InitTypeDef gpio_I2C3_SDA;
-	gpio_I2C3_SDA.Pin = /*GPIO_PIN_4 |*/GPIO_PIN_4;
+/*	GPIO_InitTypeDef gpio_I2C3_SDA;
+	gpio_I2C3_SDA.Pin = GPIO_PIN_4 |GPIO_PIN_4;
 	gpio_I2C3_SDA.Mode = GPIO_MODE_AF_OD;
 			//SDA
 	gpio_I2C3_SDA.Pull = GPIO_NOPULL;
@@ -575,7 +609,7 @@ static void MX_I2C3_Init(void)
 	HAL_GPIO_Init(GPIOB, &gpio_I2C3_SDA);
 
 	GPIO_InitTypeDef gpio_I2C3_SCL;
-	gpio_I2C3_SCL.Pin = /*GPIO_PIN_4 |*/GPIO_PIN_8;
+	gpio_I2C3_SCL.Pin = GPIO_PIN_4 |GPIO_PIN_8;
 	gpio_I2C3_SCL.Mode = GPIO_MODE_AF_OD;
 			// SCL
 	gpio_I2C3_SCL.Pull = GPIO_NOPULL;
@@ -594,7 +628,7 @@ static void MX_I2C3_Init(void)
     hi2c3.Init.OwnAddress2 = 0;
     hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
     hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-    HAL_I2C_Init(&hi2c3);
+    HAL_I2C_Init(&hi2c3);*/
 
 }
 
@@ -625,7 +659,7 @@ static void MX_TIM3_Init(void)
 	//accelerometr timer
 	__HAL_RCC_TIM3_CLK_ENABLE();
 
-	const uint16_t durationBetweenSendingTwoMeasurementsInMs = 1200;
+	const uint16_t durationBetweenSendingTwoMeasurementsInMs = 1500;
 
 	timer3.Instance = TIM3;
 	timer3.Init.Period = durationBetweenSendingTwoMeasurementsInMs - 1;

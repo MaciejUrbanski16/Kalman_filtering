@@ -4,9 +4,14 @@
 #include "magnetometr.h"
 #include "icm20948.h"
 #include "gps.h"
+//#include "ESP8266Config.h"
+//#include "ESP8266.h"
 
 #define LD2_PIN GPIO_PIN_5
 #define LD2_GPIO_PORT GPIOA
+
+#define RX_BUFFER_SIZE 128
+uint8_t rxBuffer[RX_BUFFER_SIZE];
 
 GPIO_InitTypeDef GPIO_InitStruct;
 UART_HandleTypeDef huart1, huart2, huart6;
@@ -62,31 +67,42 @@ void TIM4_IRQHandler(void)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if(huart == GpsState.neo6_huart)
+/*	if(huart == GpsState.neo6_huart)
 	{
 		NEO6_ReceiveUartChar(&GpsState);
+	}*/
+	if(huart == &huart2)
+	{
+		HAL_Delay(1);
+	}
+	char answOk[64] = "Wifi_init rx HAL_UART_RxCpltCallback\r\n";
+	if(HAL_UART_Transmit(&huart2, answOk, strlen(answOk), 120) != HAL_OK)
+	{
+	  	HAL_Delay(5000);
 	}
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-	if(htim->Instance == TIM2)
-	{
-		//HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-		magnReadFlag = 1;
-		gyroReadFlag = 1;
-	}
-	else if(htim->Instance == TIM3)
-	{
-		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-		accReadFlag = 1;
-	}
-	else if(htim->Instance == TIM4)
-	{
-		//HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-		//gyroReadFlag = 1;
-	}
-}
+
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//{
+//	if(htim->Instance == TIM2)
+//	{
+//		//HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+//		magnReadFlag = 1;
+//		gyroReadFlag = 1;
+//	}
+//	else if(htim->Instance == TIM3)
+//	{
+//		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+//		accReadFlag = 1;
+//	}
+//	else if(htim->Instance == TIM4)
+//	{
+//		//HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+//		//gyroReadFlag = 1;
+//	}
+//}
+
 int main(void)
 {
 	init_core_clock();
@@ -101,21 +117,23 @@ int main(void)
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	//
-	__USART2_CLK_ENABLE();
-	__USART6_CLK_ENABLE();
-
-	MX_USART6_UART_Init(); // !! this impacts husart2
-	MX_USART2_UART_Init();
-	//__USART1_CLK_ENABLE();
-	//MX_USART1_UART_Init();
-
-
-
 	MX_I2C1_Init();
 	MX_I2C2_Init();
+
+	__USART2_CLK_ENABLE();
+	//__USART6_CLK_ENABLE();
+
+	//MX_USART6_UART_Init(); // !! this impacts husart2
+	MX_USART2_UART_Init();
+
+
+
+
+
+
 	//MX_I2C3_Init();
-	MX_TIM2_Init();
-	MX_TIM3_Init();
+	//MX_TIM2_Init();
+	//MX_TIM3_Init();
 	//MX_TIM4_Init();
 
 	float degree = 0.0;
@@ -209,8 +227,8 @@ int main(void)
 
     HAL_Delay(300);
     initMagnetometr();
-
-    initHMC5883L();
+    setUserBank(ub_0);
+    //initHMC5883L();
 
     //read data (8 registers for magn data starting from reg 0x11 (HXL))
     HAL_Delay(200);
@@ -229,6 +247,14 @@ int main(void)
     int16_t degreeMagn = 0;
 
 //    NEO6_Init(&GpsState, &huart6);
+   // Wifi_Init();
+
+    int counter = 0;
+
+	//__USART1_CLK_ENABLE();
+	//MX_USART1_UART_Init();
+	__USART6_CLK_ENABLE();
+    MX_USART6_UART_Init(); // !! this impacts husart2
 
     while (1)
     {
@@ -240,8 +266,72 @@ int main(void)
 //			  sprintf(gpsReadString, "UTC Time: %02d:%02d:%02d\r\n", GpsState.Hour, GpsState.Minute, GpsState.Second);
 //			  HAL_UART_Transmit(&huart2, gpsReadString, strlen(gpsReadString), 100);
 //		}
-    	if(accReadFlag == 1)
+/*    	char buffer[50];
+    	sprintf(buffer, "AT+CWJAP=\"FiberPro.pl-5G-0648_1\",\"stanislaw193\"\r\n");
+    	HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), 1000);
+    	HAL_Delay(2000);
+
+    	sprintf(buffer, "AT+CIPSTART=\"TCP\",\"10.0.0.42\",8081\r\n");
+    	HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), 1000);
+    	HAL_Delay(2000);
+
+    	char data[10]="Siema";
+    	sprintf(buffer, "AT+CIPSEND=%d\r\n", strlen(data));
+    	HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), 1000);
+    	HAL_Delay(1000);
+    	HAL_UART_Transmit(&huart2, (uint8_t*)data, strlen(data), 1000);
+    	HAL_Delay(1000);*/
+
+    	HAL_Delay(30);
+
+    	char cmd0[] = "AT\r\n";
+    	char cmd1[] = "AT+CWJAP=\"Nokia 8.3 5G\",\"a32448ed4674\"\r\n"; // Komenda AT do wys³ania
+    	char cmd2[] = "AT+CIPSTART=\"TCP\",\"192.168.92.18\",8081\r\n";
+    	char cmd3[] = "AT+CIPSEND=5\r\n";
+    	char msg[] = "stm32\r\n";
+    	char msg2[] = "nexts\r\n";
+
+    	char cmd4[32];
+    	char msg3[32];
+    	uint8_t rxBuffer1[RX_BUFFER_SIZE];
+    	char commandCounts[16];
+
+    	        // Wysy³anie komendy AT przez interfejs UART
+    	if(counter==0){
+    			HAL_UART_Transmit(&huart6, (uint8_t*)cmd0, strlen(cmd0), HAL_MAX_DELAY);
+    			HAL_Delay(1000);
+    	        HAL_UART_Transmit(&huart6, (uint8_t*)cmd1, strlen(cmd1), HAL_MAX_DELAY);
+    	        //HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
+    	        HAL_Delay(10000);
+    	        HAL_UART_Transmit(&huart6, (uint8_t*)cmd2, strlen(cmd2), HAL_MAX_DELAY);
+    	        //HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
+    	        HAL_Delay(4000);
+    	        HAL_UART_Transmit(&huart6, (uint8_t*)cmd3, strlen(cmd3), HAL_MAX_DELAY);
+    	        //HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
+    	        HAL_Delay(1000);
+    	        HAL_UART_Transmit(&huart6, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+    	       // HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
+    	        HAL_Delay(1000);
+    	        // Oczekiwanie na odpowiedŸ
+    	        //HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
+    	        //sprintf(commandCounts, "command number: %d\r\n", counter);
+    	}
+
+
+    	        char debug[] = "wyslalo sie\r\n";
+    	        //sprintf(cmd, rxBuffer1);
+    	        //HAL_UART_Transmit(&huart2, debug, strlen(debug), 100);
+    	        //HAL_UART_Transmit(&huart2, commandCounts, strlen(commandCounts), 100);
+
+    	        // Przetwarzanie odpowiedzi
+    	        // Tutaj mo¿esz analizowaæ otrzymane dane i podejmowaæ odpowiednie dzia³ania
+
+    	        // Odczekanie przed wys³aniem kolejnej komendy
+    	       // HAL_Delay(1000);
+
+    	//if(accReadFlag == 1)
     	{
+
 
 
         	HAL_Delay(5);
@@ -249,14 +339,14 @@ int main(void)
         	HAL_Delay(5);
         	GyroData gyroData = readGyroData();
 
-			const int16_t xAccDecimal = (int16_t)(accelData.xAcc * 10000);
-			const int16_t yAccDecimal = (int16_t)(accelData.yAcc * 10000);
-			const int16_t zAccDecimal = (int16_t)(accelData.zAcc * 10000);
-			float  _az = (((float)accelData.zAcc * accelScale))*azs;
+//			const int16_t xAccDecimal = (int16_t)(accelData.xAcc * 10000);
+//			const int16_t yAccDecimal = (int16_t)(accelData.yAcc * 10000);
+//			const int16_t zAccDecimal = (int16_t)(accelData.zAcc * 10000);
+//			float  _az = (((float)accelData.zAcc * accelScale))*azs;
 	//    	sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> xAcc:%d.%d yAcc:%d.%d, zAcc:%d.%d\r\n",
 	//    			accelData.devAddr, (int16_t)accelData.xAcc, xAccDecimal,  (int16_t)accelData.yAcc, yAccDecimal, (int16_t)accelData.zAcc, zAccDecimal);
-			sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> zAcc:%d.%d rawZ:%d\r\n",
-					accelData.devAddr, (int16_t)_az, zAccDecimal, accelData.zAcc);
+//			sprintf(accReadString, "ACCELEROMETR whoAmI: %u -> zAcc:%d.%d rawZ:%d\r\n",
+//					accelData.devAddr, (int16_t)_az, zAccDecimal, accelData.zAcc);
 //	    	if(HAL_UART_Transmit(&huart2, accReadString, strlen(accReadString), 20) != HAL_OK)
 //	    	{
 //	    		HAL_Delay(5000);
@@ -272,11 +362,30 @@ int main(void)
 
 	    	//degree = calculateAzimutWithDegree();
 
-	    	OrientationInSpace rawOrientationInSpace = readRawDataFromMagnetometer();
+	    	OrientationInSpace rawOrientationInSpace;// = readRawDataFromMagnetometer();
 
 	    	sprintf(gyroReadString, "%d_%d_%d_%d_%d_%d_%d_%d_\r\n",
 	    			accelData.xAcc, accelData.yAcc, accelData.zAcc, gyroData.xGyro, gyroData.yGyro, gyroData.zGyro,
 					rawOrientationInSpace.xAxis, rawOrientationInSpace.yAxis);
+
+
+
+	    	if(counter > 0 )
+	    	{
+	    		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+
+	    		sprintf(msg3,"counter:%d\r\n", counter);
+	    		sprintf(cmd4,"AT+CIPSEND=%d\r\n", strlen(gyroReadString));
+	            HAL_UART_Transmit(&huart6, (uint8_t*)cmd4, strlen(cmd4), HAL_MAX_DELAY);
+	            //HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
+	            HAL_Delay(30);
+	            HAL_UART_Transmit(&huart6, (uint8_t*)gyroReadString, strlen(gyroReadString), HAL_MAX_DELAY);
+	            //HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
+	            HAL_Delay(30);
+	    	}
+
+	    	counter++;
+
 //	    	if(HAL_UART_Transmit(&huart6, gyroReadString, strlen(gyroReadString), 120) != HAL_OK)
 //	    	{
 //	    	  	HAL_Delay(5000);
@@ -286,6 +395,18 @@ int main(void)
 	    	{
 	    	  	HAL_Delay(5000);
 	    	}
+/*	    	if(counter>0)
+	    	{
+	    		sprintf(msg3,"counter:%d\r\n", counter);
+	    		sprintf(cmd4,"AT+CIPSEND=%d\r\n", strlen(gyroReadString));
+		        HAL_UART_Transmit(&huart1, (uint8_t*)cmd4, strlen(cmd4), HAL_MAX_DELAY);
+		        //HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
+		        HAL_Delay(500);
+		        HAL_UART_Transmit(&huart1, (uint8_t*)gyroReadString, strlen(gyroReadString), HAL_MAX_DELAY);
+		        //HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
+		        HAL_Delay(500);
+	    	}*/
+
 	    	accReadFlag = 0;
     	}
     	if(magnReadFlag == 1)
@@ -454,21 +575,34 @@ void initMagnetometr(void)
 
 void MX_USART1_UART_Init(void)
 {
-    GPIO_InitStruct.Pin = GPIO_PIN_9;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
-    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	//TX
+	//__HAL_RCC_USART1_CLK_ENABLE();
+	GPIO_InitTypeDef gpio_uart1;
+	gpio_uart1.Pin = GPIO_PIN_9|GPIO_PIN_10;
+	gpio_uart1.Mode = GPIO_MODE_AF_PP;
+	gpio_uart1.Alternate = GPIO_AF7_USART1;
+	gpio_uart1.Speed = GPIO_SPEED_HIGH;
+	gpio_uart1.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(GPIOA, &gpio_uart1);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_10;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    //RX
+//    gpio_uart1.Pin = GPIO_PIN_7;
+//    gpio_uart1.Mode = GPIO_MODE_AF_PP;
+//    gpio_uart1.Alternate = GPIO_AF7_USART1;
+//    HAL_GPIO_Init(GPIOB, &gpio_uart1);
 
+
+//    huart1.Instance = USART1;
+//    huart1.Init.BaudRate = 115200;
+//    huart1.Init.WordLength = UART_WORDLENGTH_8B;
+//    huart1.Init.StopBits = UART_STOPBITS_1;
+//    huart1.Init.Parity = UART_PARITY_NONE;
+//    huart1.Init.Mode = UART_MODE_TX_RX;
+//    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+//    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
 
     huart1.Instance = USART1;
-    huart1.Init.BaudRate = 9600;
+    huart1.Init.BaudRate = 115200;
     huart1.Init.WordLength = UART_WORDLENGTH_8B;
     huart1.Init.StopBits = UART_STOPBITS_1;
     huart1.Init.Parity = UART_PARITY_NONE;
@@ -527,19 +661,19 @@ void MX_USART6_UART_Init(void)
     GPIO_InitStruct.Pin = GPIO_PIN_7;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
+//
     huart6.Instance = USART6;
-    huart6.Init.BaudRate = 9600;
+    huart6.Init.BaudRate = 115200;
     huart6.Init.WordLength = UART_WORDLENGTH_8B;
     huart6.Init.StopBits = UART_STOPBITS_1;
     huart6.Init.Parity = UART_PARITY_NONE;
     huart6.Init.Mode = UART_MODE_TX;
     huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-//    huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+    huart6.Init.OverSampling = UART_OVERSAMPLING_16;
     HAL_UART_Init(&huart6);
-
-	__HAL_UART_ENABLE_IT(&huart6,  UART_IT_RXNE);
-	HAL_NVIC_EnableIRQ(USART6_IRQn);
+//
+//	__HAL_UART_ENABLE_IT(&huart6,  UART_IT_RXNE);
+//	HAL_NVIC_EnableIRQ(USART6_IRQn);
 }
 
 static void MX_I2C1_Init(void)
@@ -659,7 +793,7 @@ static void MX_TIM3_Init(void)
 	//accelerometr timer
 	__HAL_RCC_TIM3_CLK_ENABLE();
 
-	const uint16_t durationBetweenSendingTwoMeasurementsInMs = 1500;
+	const uint16_t durationBetweenSendingTwoMeasurementsInMs = 4300;
 
 	timer3.Instance = TIM3;
 	timer3.Init.Period = durationBetweenSendingTwoMeasurementsInMs - 1;

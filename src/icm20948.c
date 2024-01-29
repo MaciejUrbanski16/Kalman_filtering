@@ -206,7 +206,7 @@ MagnData readMagnData()
 
 	MagnData magnData;
 	uint8_t rawData[6];
-    if(HAL_I2C_Mem_Read(&hi2c1, ICM20948_ADDRESS << 1, B0_EXT_SLV_SENS_DATA_00, 1, rawData, 6, 100) != HAL_OK)
+    if(HAL_I2C_Mem_Read(&hi2c1, ICM20948_ADDRESS << 1, B0_EXT_SLV_SENS_DATA_00, 1, rawData, 6, HAL_MAX_DELAY) != HAL_OK)
     {
     	HAL_Delay(5000);
     	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);

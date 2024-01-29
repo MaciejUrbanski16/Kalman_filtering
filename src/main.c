@@ -96,7 +96,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
     if(huart->Instance == USART1)
     {
+
         // Tutaj mo¿esz przetwarzaæ odebrane dane
+        //HAL_UART_Receive_IT(&huart1, (uint8_t *)rxBuffer, RX_BUFFER_SIZE);
+
     }
 }
 
@@ -375,14 +378,14 @@ void vTaskFunction2(void *pvParameters)
     		    		sprintf(cmd4,"AT+CIPSEND=%d\r\n", strlen(gyroReadString));
     			        HAL_UART_Transmit(&huart6, (uint8_t*)cmd4, strlen(cmd4), HAL_MAX_DELAY);
     			        //HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
-    			        HAL_Delay(50);
+    			        HAL_Delay(1);
     			        HAL_UART_Transmit(&huart6, (uint8_t*)gyroReadString, strlen(gyroReadString), HAL_MAX_DELAY);
     			        //HAL_UART_Receive(&huart1, rxBuffer1, RX_BUFFER_SIZE, 10000);
-    			        HAL_Delay(50);
+    			        HAL_Delay(1);
     		    	}
 
 
-    	HAL_Delay(100);
+    	//HAL_Delay(100);
     	//vTaskDelay( 100 / portTICK_RATE_MS );
     	//xSemaphoreGive(xSemaphore);
         // Tutaj umieœæ kod, który ma byæ wykonywany przez w¹tek 2
@@ -394,29 +397,30 @@ void vTaskFunction2(void *pvParameters)
 void vTaskFunction3(void *pvParameters)
 {
 
+
 	while(1)
 	{
     	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-		char buffer[24];
-		int counter = 0;
+		uint8_t buffer[128];
+		int counter = 5;
 		//if( xSemaphoreTake( xSemaphore, 1000 / portTICK_RATE_MS ) == pdTRUE )
 		{
 		//osDelay(100);
 			//sprintf(buffer,"EMPTY\r\n");
-//			if(counter == 1)
-//			{
-//				    	if(HAL_UART_Receive(&huart1, (uint8_t*)buffer, 24, 1000) != HAL_OK)
+			//if(counter == 1)
+			{
+//				    	if(HAL_UART_Receive(&huart1, buffer, 128, 10000) != HAL_OK)
 //				    	{
 //				    	  	HAL_Delay(5000);
 //				    	}
-//			}
+			}
 				    	//HAL_Delay(100);
 
 		HAL_Delay(100);
 		//vTaskDelay( 100 / portTICK_RATE_MS );
 		}
 	}
-	vTaskDelete(NULL);
+	//vTaskDelete(NULL);
 }
 
 
@@ -433,9 +437,9 @@ int main(void)
 	__GPIOA_CLK_ENABLE();
 	__GPIOB_CLK_ENABLE();
 	__GPIOC_CLK_ENABLE();
-	__HAL_RCC_GPIOA_CLK_ENABLE();
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-	__HAL_RCC_GPIOC_CLK_ENABLE();
+//	__HAL_RCC_GPIOA_CLK_ENABLE();
+//	__HAL_RCC_GPIOB_CLK_ENABLE();
+//	__HAL_RCC_GPIOC_CLK_ENABLE();
 	//
 	MX_I2C1_Init();
 	//MX_I2C2_Init();
@@ -783,11 +787,11 @@ void MX_USART1_UART_Init(void)
 	//RX
 
 	GPIO_InitTypeDef gpio_uart1;
-	gpio_uart1.Pin = GPIO_PIN_10;
+	gpio_uart1.Pin = GPIO_PIN_3;
 	gpio_uart1.Mode = GPIO_MODE_AF_PP;
 	gpio_uart1.Alternate = GPIO_AF7_USART1;
 	gpio_uart1.Speed = GPIO_SPEED_HIGH;
-	gpio_uart1.Pull = GPIO_PULLUP;
+	gpio_uart1.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &gpio_uart1);
 //
     __HAL_RCC_USART1_CLK_ENABLE();
@@ -821,7 +825,10 @@ void MX_USART1_UART_Init(void)
       while(1);
     }
 //
-//	HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+//    HAL_NVIC_SetPriority(USART1_IRQn, 2, 3);
+//    HAL_NVIC_EnableIRQ(USART1_IRQn);
+//    HAL_UART_Receive_IT(&huart1, (uint8_t *)rxBuffer, RX_BUFFER_SIZE);
+
 }
 
 
